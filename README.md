@@ -56,7 +56,7 @@ It supports both **In-Game Chat** and **Terminal (Console)** control, making it 
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/tier-one-bot.git
+git clone https://github.com/verty4704-png/-TIER-ONE-BOT..git
     cd tier-one-bot
     ```
 
