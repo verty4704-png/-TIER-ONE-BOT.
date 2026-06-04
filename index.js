@@ -1,5 +1,6 @@
 const mineflayer = require('mineflayer')
 const { pathfinder, Movements } = require('mineflayer-pathfinder')
+const readline = require('readline') // Модуль для управления через терминал
 const config = require('./config')
 
 // Боевые модули
@@ -56,7 +57,18 @@ let currentMode = 'axe'
 let target = null
 let isOP = false
 
-// --- СОБЫТИЯ ПОДКЛЮЧЕНИЯ ---
+// ==========================================
+// 🎮 НАСТРОЙКА ТЕРМИНАЛА (READLINE)
+// ==========================================
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '\n[TIER-ONE TERMINAL] > '
+})
+
+// ==========================================
+// ⚙️ СОБЫТИЯ ПОДКЛЮЧЕНИЯ И СПАВНА
+// ==========================================
 
 bot.on('spawn', () => {
     console.log(`[SYSTEM] Bot spawned. Version: ${bot.version}`)
@@ -70,86 +82,139 @@ bot.on('spawn', () => {
     
     // Запрос OP прав
     if (config.op.autoRequest) {
-        setTimeout(() => {
-            requestOP()
-        }, 2000)
+        setTimeout(() => requestOP(), 2000)
     }
+
+    // Активируем терминал
+    console.log('[TERMINAL] Консоль управления активна. Введите "help" для списка команд.')
+    rl.prompt()
 })
 
 bot.on('login', () => {
     console.log('[SYSTEM] Bot logged in successfully')
 })
 
-// --- ЗАПРОС OP ПРАВ ---
-
 function requestOP() {
     console.log('[OP] Requesting operator permissions...')
     bot.chat(config.op.requestMessage)
-    
-    // Проверяем через 5 секунд
     setTimeout(() => {
-        if (bot.player.gamemode === 1) {
+        if (bot.player && bot.player.gamemode === 1) {
             isOP = true
             console.log('[OP] ✓ Operator permissions granted!')
         } else {
-            console.log('[OP] ✗ Still waiting for operator permissions...')
+            console.log('[OP] ✗ Still waiting for operator permissions... (Use /op ' + bot.username + ' in server console)')
         }
     }, 5000)
 }
 
-// --- ОБРАБОТКА ЧАТА ---
+// ==========================================
+// 💬 ОБРАБОТКА ЧАТА В ИГРЕ (Команды с !)
+// ==========================================
 
 bot.on('chat', (username, message) => {
     if (username === bot.username) return
+
+    // 🔒 ЗАЩИТА: Раскомментируйте и добавьте свой ник, чтобы бот слушал только вас
+    // const ADMINS = ['ВашНик', 'Admin2'] 
+    // if (!ADMINS.includes(username)) return
 
     const args = message.split(' ')
     const command = args[0].toLowerCase()
 
     switch (command) {
-        case '!help':
-            showHelp()
-            break
-
-        case '!fight':
-            if (args[1]) {
-                startFight(args[1])
-            } else {
-                bot.chat('[ERROR] Usage: !fight <player>')
-            }
-            break
-
-        case '!stop':
-            stopFight()
-            break
-
-        case '!mode':
-            if (args[1]) {
-                changeMode(args[1])
-            } else {
-                bot.chat('[ERROR] Usage: !mode <axe|sword|crystal>')
-            }
-            break
-
-        case '!creative':
-            enableCreative()
-            break
-
-        case '!survival':
-            enableSurvival()
-            break
-
-        case '!equip':
+        case '!help': showHelp(); break
+        case '!fight': if (args[1]) startFight(args[1]); break
+        case '!stop': stopFight(); break
+        case '!mode': if (args[1]) changeMode(args[1]); break
+        case '!creative': enableCreative(); break
+        case '!survival': enableSurvival(); break
+        case '!equip': 
             equipment.autoEquip()
             bot.chat('[EQUIP] Auto-equipping best gear...')
             break
-
-        case '!status':
-            showStatus()
-            break
+        case '!status': showStatus(); break
     }
 })
 
-// --- КОМАНДЫ ---
+// ==========================================
+// 💻 ОБРАБОТКА КОМАНД ТЕРМИНАЛА
+// ==========================================
+
+rl.on('line', (input) => {
+    const args = input.trim().split(' ')
+    const command = args[0].toLowerCase()
+
+    switch (command) {
+        case 'help':
+            console.log('\n--- Доступные команды терминала ---')
+            console.log('fight <ник>  - Атаковать игрока')
+            console.log('stop         - Остановить бой')
+            console.log('mode <тип>   - Сменить режим (axe/sword/crystal)')
+            console.log('creative     - Включить креатив (нужен OP)')
+            console.log('survival     - Включить выживание')
+            console.log('equip        - Надеть лучшую броню')
+            console.log('chat <текст> - Написать сообщение в чат игры')
+            console.log('status       - Показать статус бота')
+            console.log('exit / quit  - Отключить бота')
+            console.log('-----------------------------------\n')
+            break
+
+        case 'fight':
+            if (args[1]) startFight(args[1])
+            else console.log('[TERMINAL] Укажите ник: fight <ник>')
+            break
+
+        case 'stop':
+            stopFight()
+            break
+
+        case 'mode':
+            if (args[1]) changeMode(args[1])
+            else console.log('[TERMINAL] Укажите режим: mode <axe|sword|crystal>')
+            break
+
+        case 'creative':
+            enableCreative()
+            break
+
+        case 'survival':
+            enableSurvival()
+            break
+
+        case 'equip':
+            equipment.autoEquip()
+            console.log('[TERMINAL] Экипировка обновлена.')
+            break
+
+        case 'chat':
+            const chatMessage = args.slice(1).join(' ')
+            if (chatMessage) {
+                bot.chat(chatMessage)
+                console.log(`[TERMINAL] Отправлено в чат: ${chatMessage}`)
+            }
+            break
+
+        case 'status':
+            showConsoleStatus()
+            break
+
+        case 'exit':
+        case 'quit':
+            console.log('[SYSTEM] Отключение бота...')
+            bot.quit()
+            process.exit(0)
+            break
+
+        default:
+            if (command !== '') console.log('[TERMINAL] Неизвестная команда. Введите "help".')
+    }
+    
+    rl.prompt() // Возвращаем строку ввода
+})
+
+// ==========================================
+// 🛠️ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Общие для чата и терминала)
+// ==========================================
 
 function showHelp() {
     bot.chat('╔════════════════════════════════════╗')
@@ -162,23 +227,24 @@ function showHelp() {
     bot.chat('║ !survival - Enable survival mode   ║')
     bot.chat('║ !equip - Auto-equip best gear      ║')
     bot.chat('║ !status - Show bot status          ║')
-    bot.chat('║ !help - Show this help             ║')
     bot.chat('╚════════════════════════════════════╝')
 }
 
 function startFight(playerName) {
     const player = bot.players[playerName]
     if (!player || !player.entity) {
-        bot.chat(`[ERROR] Player ${playerName} not found`)
+        const msg = `[ERROR] Player ${playerName} not found or not in render distance`
+        bot.chat(msg)
+        console.log(`[TERMINAL] ${msg}`)
         return
     }
 
     target = player.entity
-    bot.chat(`[COMBAT] Target locked: ${playerName}`)
-    bot.chat(`[MODE] Using ${combatModes[currentMode].name}`)
-    
-    // Запуск боевого режима
     combatModes[currentMode].start(target)
+    
+    const msg = `[COMBAT] Target locked: ${playerName} | Mode: ${currentMode}`
+    bot.chat(msg)
+    console.log(`[TERMINAL] ${msg}`)
 }
 
 function stopFight() {
@@ -186,100 +252,100 @@ function stopFight() {
         combatModes[currentMode].stop()
         target = null
         bot.chat('[COMBAT] Fight stopped')
+        console.log('[TERMINAL] Fight stopped')
     }
 }
 
 function changeMode(mode) {
     const validModes = ['axe', 'sword', 'crystal']
     if (!validModes.includes(mode)) {
-        bot.chat('[ERROR] Invalid mode. Use: axe, sword, or crystal')
+        const msg = '[ERROR] Invalid mode. Use: axe, sword, or crystal'
+        bot.chat(msg)
+        console.log(`[TERMINAL] ${msg}`)
         return
     }
 
-    // Остановка текущего режима
-    if (target) {
-        combatModes[currentMode].stop()
-    }
-
+    if (target) combatModes[currentMode].stop()
     currentMode = mode
-    
-    // Запуск нового режима
-    if (target) {
-        combatModes[currentMode].start(target)
-    }
+    if (target) combatModes[currentMode].start(target)
 
-    bot.chat(`[MODE] Switched to ${combatModes[currentMode].name}`)
+    const msg = `[MODE] Switched to ${combatModes[currentMode].name}`
+    bot.chat(msg)
+    console.log(`[TERMINAL] ${msg}`)
 }
 
 function enableCreative() {
     if (!isOP) {
-        bot.chat('[ERROR] Need operator permissions first!')
-        bot.chat('[HINT] Use: /op TierOneBot in server console')
+        const msg = '[ERROR] Need OP! Use: /op ' + bot.username + ' in server console'
+        bot.chat(msg)
+        console.log(`[TERMINAL] ${msg}`)
         return
     }
 
     bot.chat('/gamemode creative')
-    bot.chat('[CREATIVE] Switching to creative mode...')
+    console.log('[TERMINAL] Switching to creative mode...')
     
     setTimeout(() => {
         equipment.creativeEquip(config.creative.items)
-        bot.chat('[CREATIVE] ✓ Equipped with creative items!')
+        bot.chat('[CREATIVE] ✓ Equipped!')
+        console.log('[TERMINAL] Creative items given.')
     }, 1000)
 }
 
 function enableSurvival() {
     if (!isOP) {
-        bot.chat('[ERROR] Need operator permissions first!')
+        bot.chat('[ERROR] Need OP!')
         return
     }
-
     bot.chat('/gamemode survival')
-    bot.chat('[SURVIVAL] Switching to survival mode...')
+    console.log('[TERMINAL] Switching to survival mode...')
 }
 
 function showStatus() {
-    bot.chat('╔════════════════════════════════════╗')
-    bot.chat('║         Bot Status                 ║')
-    bot.chat('╠════════════════════════════════════╣')
-    bot.chat(`║ Version: ${bot.version}`)
-    bot.chat(`║ Mode: ${combatModes[currentMode].name}`)
-    bot.chat(`║ Target: ${target ? 'Active' : 'None'}`)
-    bot.chat(`║ Health: ${Math.floor(bot.health)}/20`)
-    bot.chat(`║ Food: ${Math.floor(bot.food)}/20`)
-    bot.chat(`║ OP: ${isOP ? 'Yes' : 'No'}`)
-    bot.chat(`║ Gamemode: ${bot.game.gameMode}`)
-    bot.chat('╚════════════════════════════════════╝')
+    bot.chat(`[STATUS] HP: ${Math.floor(bot.health)} | Food: ${Math.floor(bot.food)} | Mode: ${currentMode} | Target: ${target ? 'Active' : 'None'}`)
 }
 
-// --- ГЛАВНЫЙ ЦИКЛ ---
+function showConsoleStatus() {
+    console.log('\n--- BOT STATUS ---')
+    console.log(`Version:  ${bot.version}`)
+    console.log(`Mode:     ${combatModes[currentMode].name}`)
+    console.log(`Target:   ${target ? 'Active' : 'None'}`)
+    console.log(`Health:   ${Math.floor(bot.health)}/20`)
+    console.log(`Food:     ${Math.floor(bot.food)}/20`)
+    console.log(`OP:       ${isOP ? 'Yes' : 'No'}`)
+    console.log(`Gamemode: ${bot.game ? bot.game.gameMode : 'Unknown'}`)
+    console.log('------------------\n')
+}
+
+// ==========================================
+// 🔄 ГЛАВНЫЙ ЦИКЛ БОЯ (Physics Tick)
+// ==========================================
 
 bot.on('physicsTick', () => {
     if (!target || !target.isValid) {
-        target = null
+        if (target) {
+            combatModes[currentMode].stop()
+            target = null
+        }
         return
     }
 
-    // Обновление текущего боевого режима
     combatModes[currentMode].update(target)
     
-    // Авто-еда
     if (config.equipment.autoEat && bot.health < config.equipment.eatThreshold) {
         equipment.eat()
     }
 })
 
-// --- ОБРАБОТКА ОШИБОК ---
+// ==========================================
+// ❌ ОБРАБОТКА ОШИБОК И ОТКЛЮЧЕНИЯ
+// ==========================================
 
-bot.on('error', (err) => {
-    console.error('[ERROR]', err)
-})
-
-bot.on('kicked', (reason) => {
-    console.log('[KICKED]', reason)
-})
-
+bot.on('error', (err) => console.error('[ERROR]', err))
+bot.on('kicked', (reason) => console.log('[KICKED]', reason))
 bot.on('end', () => {
     console.log('[SYSTEM] Bot disconnected')
+    rl.close()
     process.exit()
 })
 
