@@ -56,8 +56,8 @@ It supports both **In-Game Chat** and **Terminal (Console)** control, making it 
 
 1.  **Clone the repository:**
     ```bash
-git clone https://github.com/verty4704-png/-TIER-ONE-BOT..git
-    cd tier-one-bot
+    git clone https://github.com/verty4704-png/-TIER-ONE-BOT.git
+    cd -TIER-ONE-BOT
     ```
 
 2.  **Install dependencies:**
@@ -131,3 +131,23 @@ tier-one-bot/
     ├── movement.js       # Pathfinding & Strafing
     ├── anticheat.js      # Humanization algorithms
     └── prediction.js     # Velocity & Position tracking
+⚙️ Configuration
+Edit config.js to fine-tune the bot's behavior:
+combat.reach: Max attack distance (Default: 3.8).
+combat.wTapDelay: Randomization range for sprint-resetting (Default: 30-60ms).
+combat.critChance: Probability of jumping for a critical hit (Default: 0.95).
+op.autoRequest: Automatically asks for OP on spawn (useful for private testing).
+⚖️ License & Disclaimer
+This project is licensed under the TIER-ONE Educational & Open License (TOEL) 1.0.
+See the LICENSE file for full legal text.
+⚠️ WARNING: EDUCATIONAL PURPOSE ONLY
+This software is designed for stress-testing private servers and researching AI behavior.
+EULA: Using automated bots on public servers violates the Minecraft EULA.
+Bans: Modern anticheats (Watchdog, Vulcan, Grim, Matrix) detect packet anomalies. The authors are NOT responsible for banned accounts.
+No Warranty: The software is provided "AS IS" without warranty of any kind.
+<div align="center">
+
+Made with ❤️ for the technical Minecraft community.
+If you use this code, please star the repo and credit the original authors.
+</div>
+```
