@@ -1,19 +1,36 @@
-const mineflayer = require('mineflayer')
-const { pathfinder, Movements } = require('mineflayer-pathfinder')
-const readline = require('readline') // Модуль для управления через терминал
-const config = require('./config')
+const mineflayer = require('mineflayer');
+const { pathfinder, Movements } = require('mineflayer-pathfinder');
+const readline = require('readline');
 
-// Боевые модули
-const AxeMode = require('./combat/axe_mode')
-const SwordMode = require('./combat/sword_mode')
-const CrystalMode = require('./combat/crystal_mode')
+// --- CORE ---
+const EventBus = require('./src/core/EventBus');
+const Logger = require('./src/core/Logger');
+const ConfigManager = require('./src/core/ConfigManager');
 
-// Утилиты
-const Equipment = require('./utils/equipment')
-const Movement = require('./utils/movement')
-const Anticheat = require('./utils/anticheat')
+// --- PERCEPTION ---
+const WorldState = require('./src/perception/WorldState');
+const EntityTracker = require('./src/perception/EntityTracker');
+const CombatAnalyzer = require('./src/perception/CombatAnalyzer');
 
-console.log(`
+// --- AI ---
+const DecisionEngine = require('./src/ai/DecisionEngine');
+
+// --- EXECUTION ---
+const CombatExecutor = require('./src/execution/CombatExecutor');
+const MovementEngine = require('./src/execution/MovementEngine');
+const ItemManager = require('./src/execution/ItemManager');
+
+// --- STRATEGY ---
+const StrategyManager = require('./src/strategy/StrategyManager');
+
+// --- METRICS ---
+const Telemetry = require('./src/metrics/Telemetry');
+const ReplayRecorder = require('./src/metrics/ReplayRecorder');
+
+// ==========================================
+// 🎨 STARTUP BANNER
+// ==========================================
+console.log('\x1b[36m' + `
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║
 ║   ████████╗██╗███████╗██████╗      ██████╗ ███╗   ██╗║
@@ -23,331 +40,253 @@ console.log(`
 ║      ██║   ██║███████╗██║  ██║    ╚██████╔╝██║ ╚████║║
 ║      ╚═╝   ╚═╝╚══════╝╚═╝  ╚═╝     ╚═════╝ ╚═╝  ╚═══╝║
 ║                                                       ║
-║              H1 Level PvP Bot v1.0.0                  ║
-║              For MCTIER Rating System                 ║
+║          TIER-ONE AI Framework v2.0.0                 ║
+║              H1 Level PvP Architecture                ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
-`)
-
-// Создание бота
-const bot = mineflayer.createBot({
-    host: config.server.host,
-    port: config.server.port,
-    username: config.server.username,
-    version: config.server.version,
-    auth: config.server.auth
-})
-
-// Загрузка плагинов
-bot.loadPlugin(pathfinder)
-
-// Инициализация модулей
-const equipment = new Equipment(bot, config.equipment)
-const movement = new Movement(bot, config.combat)
-const anticheat = new Anticheat(bot, config.combat)
-
-// Боевые режимы
-const combatModes = {
-    axe: new AxeMode(bot, config.modes.axe, movement, anticheat),
-    sword: new SwordMode(bot, config.modes.sword, movement, anticheat),
-    crystal: new CrystalMode(bot, config.modes.crystal, movement, anticheat)
-}
-
-let currentMode = 'axe'
-let target = null
-let isOP = false
+` + '\x1b[0m');
 
 // ==========================================
-// 🎮 НАСТРОЙКА ТЕРМИНАЛА (READLINE)
+// ⚙️ INITIALIZATION
 // ==========================================
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: '\n[TIER-ONE TERMINAL] > '
-})
+const config = ConfigManager.load();
+Logger.info('Initializing TIER-ONE AI Framework...');
+
+const bot = mineflayer.createBot(config.server);
+bot.loadPlugin(pathfinder);
+
+// Initialize all layers
+const worldState = new WorldState(bot);
+const entityTracker = new EntityTracker(bot);
+const combatAnalyzer = new CombatAnalyzer(worldState);
+const telemetry = new Telemetry();
+const replayRecorder = new ReplayRecorder();
+
+const combatExecutor = new CombatExecutor(bot, worldState);
+const movementEngine = new MovementEngine(bot, worldState);
+const itemManager = new ItemManager(bot);
+
+const strategyManager = new StrategyManager(combatExecutor, movementEngine, itemManager);
+const decisionEngine = new DecisionEngine(worldState, strategyManager, combatAnalyzer);
+
+let isOP = false;
 
 // ==========================================
-// ⚙️ СОБЫТИЯ ПОДКЛЮЧЕНИЯ И СПАВНА
+// 🔌 EVENT SUBSCRIPTIONS
+// ==========================================
+
+// Combat events
+EventBus.on('COMBAT:TARGET_ACQUIRED', (data) => {
+    Logger.combat(`Engaging target: ${data.entity.username}`);
+    replayRecorder.startRecording();
+});
+
+EventBus.on('COMBAT:TARGET_LOST', (data) => {
+    Logger.warn('Target lost. Combat ended.');
+    replayRecorder.stopRecording();
+    movementEngine.resetControls();
+});
+
+EventBus.on('COMBAT:ATTACK_EXECUTED', (data) => {
+    telemetry.recordAttack(data);
+    replayRecorder.recordEvent('attack', data);
+});
+
+EventBus.on('COMBAT:DAMAGE_TAKEN', (data) => {
+    telemetry.recordDamage(data);
+    Logger.warn(`Took ${data.amount} damage!`);
+});
+
+// World updates
+EventBus.on('WORLD:TICK_UPDATED', (data) => {
+    decisionEngine.tick(data);
+});
+
+// ==========================================
+// 🎮 MINEFLAYER EVENTS
 // ==========================================
 
 bot.on('spawn', () => {
-    console.log(`[SYSTEM] Bot spawned. Version: ${bot.version}`)
+    Logger.success(`Bot spawned. Version: ${bot.version}`);
     
-    // Настройка pathfinder
-    const mcData = require('minecraft-data')(bot.version)
-    const defaultMove = new Movements(bot, mcData)
-    defaultMove.canDig = false
-    defaultMove.allow1by1towers = false
-    bot.pathfinder.setMovements(defaultMove)
+    const mcData = require('minecraft-data')(bot.version);
+    const defaultMove = new Movements(bot, mcData);
+    defaultMove.canDig = false;
+    defaultMove.allow1by1towers = false;
+    bot.pathfinder.setMovements(defaultMove);
     
-    // Запрос OP прав
-    if (config.op.autoRequest) {
-        setTimeout(() => requestOP(), 2000)
+    if (config.op?.autoRequest) {
+        setTimeout(() => requestOP(), 2000);
     }
-
-    // Активируем терминал
-    console.log('[TERMINAL] Консоль управления активна. Введите "help" для списка команд.')
-    rl.prompt()
-})
-
-bot.on('login', () => {
-    console.log('[SYSTEM] Bot logged in successfully')
-})
-
-function requestOP() {
-    console.log('[OP] Requesting operator permissions...')
-    bot.chat(config.op.requestMessage)
-    setTimeout(() => {
-        if (bot.player && bot.player.gamemode === 1) {
-            isOP = true
-            console.log('[OP] ✓ Operator permissions granted!')
-        } else {
-            console.log('[OP] ✗ Still waiting for operator permissions... (Use /op ' + bot.username + ' in server console)')
-        }
-    }, 5000)
-}
-
-// ==========================================
-// 💬 ОБРАБОТКА ЧАТА В ИГРЕ (Команды с !)
-// ==========================================
+});
 
 bot.on('chat', (username, message) => {
-    if (username === bot.username) return
+    if (username === bot.username) return;
+    
+    const args = message.split(' ');
+    const command = args[0].toLowerCase();
+    
+    handleCommand(command, args, username);
+});
 
-    // 🔒 ЗАЩИТА: Раскомментируйте и добавьте свой ник, чтобы бот слушал только вас
-    // const ADMINS = ['ВашНик', 'Admin2'] 
-    // if (!ADMINS.includes(username)) return
-
-    const args = message.split(' ')
-    const command = args[0].toLowerCase()
-
-    switch (command) {
-        case '!help': showHelp(); break
-        case '!fight': if (args[1]) startFight(args[1]); break
-        case '!stop': stopFight(); break
-        case '!mode': if (args[1]) changeMode(args[1]); break
-        case '!creative': enableCreative(); break
-        case '!survival': enableSurvival(); break
-        case '!equip': 
-            equipment.autoEquip()
-            bot.chat('[EQUIP] Auto-equipping best gear...')
-            break
-        case '!status': showStatus(); break
+bot.on('entityHurt', (entity) => {
+    if (entity === bot.entity) {
+        EventBus.emit('COMBAT:DAMAGE_TAKEN', { 
+            entity, 
+            amount: 0, // Mineflayer doesn't provide damage amount directly
+            health: bot.health 
+        });
     }
-})
+});
+
+bot.on('error', (err) => Logger.error('Bot error:', err));
+bot.on('kicked', (reason) => Logger.warn('Bot kicked:', reason));
+bot.on('end', () => {
+    Logger.info('Bot disconnected');
+    process.exit();
+});
 
 // ==========================================
-// 💻 ОБРАБОТКА КОМАНД ТЕРМИНАЛА
+// 🎮 COMMAND HANDLER
 // ==========================================
 
-rl.on('line', (input) => {
-    const args = input.trim().split(' ')
-    const command = args[0].toLowerCase()
-
+function handleCommand(command, args, username) {
     switch (command) {
-        case 'help':
-            console.log('\n--- Доступные команды терминала ---')
-            console.log('fight <ник>  - Атаковать игрока')
-            console.log('stop         - Остановить бой')
-            console.log('mode <тип>   - Сменить режим (axe/sword/crystal)')
-            console.log('creative     - Включить креатив (нужен OP)')
-            console.log('survival     - Включить выживание')
-            console.log('equip        - Надеть лучшую броню')
-            console.log('chat <текст> - Написать сообщение в чат игры')
-            console.log('status       - Показать статус бота')
-            console.log('exit / quit  - Отключить бота')
-            console.log('-----------------------------------\n')
-            break
-
-        case 'fight':
-            if (args[1]) startFight(args[1])
-            else console.log('[TERMINAL] Укажите ник: fight <ник>')
-            break
-
-        case 'stop':
-            stopFight()
-            break
-
-        case 'mode':
-            if (args[1]) changeMode(args[1])
-            else console.log('[TERMINAL] Укажите режим: mode <axe|sword|crystal>')
-            break
-
-        case 'creative':
-            enableCreative()
-            break
-
-        case 'survival':
-            enableSurvival()
-            break
-
-        case 'equip':
-            equipment.autoEquip()
-            console.log('[TERMINAL] Экипировка обновлена.')
-            break
-
-        case 'chat':
-            const chatMessage = args.slice(1).join(' ')
-            if (chatMessage) {
-                bot.chat(chatMessage)
-                console.log(`[TERMINAL] Отправлено в чат: ${chatMessage}`)
+        case '!fight':
+            if (args[1]) {
+                const target = bot.players[args[1]]?.entity;
+                if (target) {
+                    worldState.setTarget(target);
+                    bot.chat(`[AI] Target locked: ${args[1]}`);
+                } else {
+                    bot.chat('[ERROR] Player not found');
+                }
             }
-            break
-
-        case 'status':
-            showConsoleStatus()
-            break
-
-        case 'exit':
-        case 'quit':
-            console.log('[SYSTEM] Отключение бота...')
-            bot.quit()
-            process.exit(0)
-            break
-
-        default:
-            if (command !== '') console.log('[TERMINAL] Неизвестная команда. Введите "help".')
-    }
-    
-    rl.prompt() // Возвращаем строку ввода
-})
-
-// ==========================================
-// 🛠️ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (Общие для чата и терминала)
-// ==========================================
-
-function showHelp() {
-    bot.chat('╔════════════════════════════════════╗')
-    bot.chat('║      TIER-ONE BOT Commands         ║')
-    bot.chat('╠════════════════════════════════════╣')
-    bot.chat('║ !fight <player> - Attack target    ║')
-    bot.chat('║ !stop - Stop fighting              ║')
-    bot.chat('║ !mode <axe|sword|crystal>          ║')
-    bot.chat('║ !creative - Enable creative mode   ║')
-    bot.chat('║ !survival - Enable survival mode   ║')
-    bot.chat('║ !equip - Auto-equip best gear      ║')
-    bot.chat('║ !status - Show bot status          ║')
-    bot.chat('╚════════════════════════════════════╝')
-}
-
-function startFight(playerName) {
-    const player = bot.players[playerName]
-    if (!player || !player.entity) {
-        const msg = `[ERROR] Player ${playerName} not found or not in render distance`
-        bot.chat(msg)
-        console.log(`[TERMINAL] ${msg}`)
-        return
-    }
-
-    target = player.entity
-    combatModes[currentMode].start(target)
-    
-    const msg = `[COMBAT] Target locked: ${playerName} | Mode: ${currentMode}`
-    bot.chat(msg)
-    console.log(`[TERMINAL] ${msg}`)
-}
-
-function stopFight() {
-    if (target) {
-        combatModes[currentMode].stop()
-        target = null
-        bot.chat('[COMBAT] Fight stopped')
-        console.log('[TERMINAL] Fight stopped')
+            break;
+            
+        case '!stop':
+            worldState.clearTarget();
+            bot.chat('[AI] Combat stopped');
+            break;
+            
+        case '!mode':
+            if (args[1] && ['axe', 'sword', 'crystal'].includes(args[1])) {
+                strategyManager.setStrategy(args[1]);
+                bot.chat(`[AI] Mode switched to: ${args[1]}`);
+            }
+            break;
+            
+        case '!creative':
+            if (!isOP) {
+                bot.chat('[ERROR] Need OP permissions');
+                return;
+            }
+            bot.chat('/gamemode creative');
+            setTimeout(() => {
+                itemManager.creativeEquip(config.creative?.items || []);
+                bot.chat('[AI] Creative gear equipped');
+            }, 1000);
+            break;
+            
+        case '!status':
+            const stats = telemetry.getStats();
+            bot.chat(`[STATUS] HP: ${Math.floor(bot.health)} | Mode: ${strategyManager.currentStrategy} | Attacks: ${stats.totalAttacks}`);
+            break;
+            
+        case '!help':
+            bot.chat('[HELP] !fight <player> | !stop | !mode <axe|sword|crystal> | !creative | !status');
+            break;
     }
 }
 
-function changeMode(mode) {
-    const validModes = ['axe', 'sword', 'crystal']
-    if (!validModes.includes(mode)) {
-        const msg = '[ERROR] Invalid mode. Use: axe, sword, or crystal'
-        bot.chat(msg)
-        console.log(`[TERMINAL] ${msg}`)
-        return
-    }
-
-    if (target) combatModes[currentMode].stop()
-    currentMode = mode
-    if (target) combatModes[currentMode].start(target)
-
-    const msg = `[MODE] Switched to ${combatModes[currentMode].name}`
-    bot.chat(msg)
-    console.log(`[TERMINAL] ${msg}`)
-}
-
-function enableCreative() {
-    if (!isOP) {
-        const msg = '[ERROR] Need OP! Use: /op ' + bot.username + ' in server console'
-        bot.chat(msg)
-        console.log(`[TERMINAL] ${msg}`)
-        return
-    }
-
-    bot.chat('/gamemode creative')
-    console.log('[TERMINAL] Switching to creative mode...')
+function requestOP() {
+    Logger.info('Requesting operator permissions...');
+    bot.chat('Please grant OP: /op ' + bot.username);
     
     setTimeout(() => {
-        equipment.creativeEquip(config.creative.items)
-        bot.chat('[CREATIVE] ✓ Equipped!')
-        console.log('[TERMINAL] Creative items given.')
-    }, 1000)
-}
-
-function enableSurvival() {
-    if (!isOP) {
-        bot.chat('[ERROR] Need OP!')
-        return
-    }
-    bot.chat('/gamemode survival')
-    console.log('[TERMINAL] Switching to survival mode...')
-}
-
-function showStatus() {
-    bot.chat(`[STATUS] HP: ${Math.floor(bot.health)} | Food: ${Math.floor(bot.food)} | Mode: ${currentMode} | Target: ${target ? 'Active' : 'None'}`)
-}
-
-function showConsoleStatus() {
-    console.log('\n--- BOT STATUS ---')
-    console.log(`Version:  ${bot.version}`)
-    console.log(`Mode:     ${combatModes[currentMode].name}`)
-    console.log(`Target:   ${target ? 'Active' : 'None'}`)
-    console.log(`Health:   ${Math.floor(bot.health)}/20`)
-    console.log(`Food:     ${Math.floor(bot.food)}/20`)
-    console.log(`OP:       ${isOP ? 'Yes' : 'No'}`)
-    console.log(`Gamemode: ${bot.game ? bot.game.gameMode : 'Unknown'}`)
-    console.log('------------------\n')
+        if (bot.player?.gamemode === 1) {
+            isOP = true;
+            Logger.success('OP permissions granted!');
+        }
+    }, 5000);
 }
 
 // ==========================================
-// 🔄 ГЛАВНЫЙ ЦИКЛ БОЯ (Physics Tick)
+// 💻 TERMINAL CONTROL
+// ==========================================
+
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '\n[TIER-ONE] > '
+});
+
+rl.on('line', (input) => {
+    const args = input.trim().split(' ');
+    const command = args[0].toLowerCase();
+    
+    switch (command) {
+        case 'fight':
+            if (args[1]) {
+                const target = bot.players[args[1]]?.entity;
+                if (target) {
+                    worldState.setTarget(target);
+                    Logger.combat(`Target acquired: ${args[1]}`);
+                }
+            }
+            break;
+            
+        case 'stop':
+            worldState.clearTarget();
+            Logger.info('Combat stopped');
+            break;
+            
+        case 'mode':
+            if (args[1]) {
+                strategyManager.setStrategy(args[1]);
+                Logger.info(`Strategy changed to: ${args[1]}`);
+            }
+            break;
+            
+        case 'chat':
+            const msg = args.slice(1).join(' ');
+            if (msg) bot.chat(msg);
+            break;
+            
+        case 'status':
+            const stats = telemetry.getStats();
+            Logger.info(`HP: ${Math.floor(bot.health)} | Mode: ${strategyManager.currentStrategy}`);
+            Logger.info(`Attacks: ${stats.totalAttacks} | Hit Rate: ${(stats.hitRate * 100).toFixed(1)}%`);
+            break;
+            
+        case 'exit':
+        case 'quit':
+            Logger.info('Shutting down...');
+            bot.quit();
+            process.exit(0);
+            break;
+            
+        case 'help':
+            Logger.info('Commands: fight <player>, stop, mode <type>, chat <msg>, status, exit');
+            break;
+    }
+    
+    rl.prompt();
+});
+
+bot.on('spawn', () => {
+    Logger.success('Terminal control active. Type "help" for commands.');
+    rl.prompt();
+});
+
+// ==========================================
+// 🔄 MAIN LOOP
 // ==========================================
 
 bot.on('physicsTick', () => {
-    if (!target || !target.isValid) {
-        if (target) {
-            combatModes[currentMode].stop()
-            target = null
-        }
-        return
-    }
+    worldState.update();
+    entityTracker.update();
+});
 
-    combatModes[currentMode].update(target)
-    
-    if (config.equipment.autoEat && bot.health < config.equipment.eatThreshold) {
-        equipment.eat()
-    }
-})
-
-// ==========================================
-// ❌ ОБРАБОТКА ОШИБОК И ОТКЛЮЧЕНИЯ
-// ==========================================
-
-bot.on('error', (err) => console.error('[ERROR]', err))
-bot.on('kicked', (reason) => console.log('[KICKED]', reason))
-bot.on('end', () => {
-    console.log('[SYSTEM] Bot disconnected')
-    rl.close()
-    process.exit()
-})
-
-console.log('[SYSTEM] Bot starting...')
-console.log(`[SYSTEM] Connecting to ${config.server.host}:${config.server.port}`)
+Logger.info('TIER-ONE AI Framework initialized');
+Logger.info(`Connecting to ${config.server.host}:${config.server.port}...`);
