@@ -1,0 +1,29 @@
+{
+  "name": "tier-one-bot",
+  "version": "1.0.0",
+  "description": "H1 Level PvP Bot for MCTIER - Advanced combat system with multiple modes",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "keywords": [
+    "minecraft",
+    "bot",
+    "pvp",
+    "mineflayer",
+    "h1",
+    "mctier"
+  ],
+  "author": "TierOne Team",
+  "license": "MIT",
+  "dependencies": {
+    "mineflayer": "^4.20.1",
+    "mineflayer-pathfinder": "^2.4.4",
+    "minecraft-data": "^3.83.1",
+    "vec3": "^0.1.10"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
