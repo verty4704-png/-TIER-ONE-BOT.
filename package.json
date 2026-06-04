@@ -16,7 +16,7 @@
     "mctier"
   ],
   "author": "TierOne Team",
-  "license": "TOEL-1.0",
+  "license": "SEE LICENSE IN LICENSE.md",
   "dependencies": {
     "mineflayer": "^4.20.1",
     "mineflayer-pathfinder": "^2.4.4",
