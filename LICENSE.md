@@ -51,3 +51,7 @@ copy, modify, and distribute the Software, subject to the following conditions:
 
 ---
 End of License.
+
+GOVERNING LAW
+
+This License shall be governed by and construed in accordance with the laws of Uzbekistan.
