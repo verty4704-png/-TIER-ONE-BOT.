@@ -1,17 +1,17 @@
 <div align="center">
 
-# 🏆 TIER-ONE AI Framework
+# 🏆 TIER-ONE AI Framework v3.0.0
 
-### Advanced Research Platform for Minecraft Combat Simulation
+### MCTier HT1 PvP Research Platform — Adaptive Learning · Advanced Prediction · Humanized Aim V2
 
 ![License](https://img.shields.io/badge/License-TERL--2.0-blue.svg?style=for-the-badge)
 ![Node](https://img.shields.io/badge/Node.js-18%2B-green.svg?style=for-the-badge&logo=node.js)
 ![Mineflayer](https://img.shields.io/badge/Mineflayer-4.20.1-blue.svg?style=for-the-badge)
-![MC Version](https://img.shields.io/badge/Minecraft-1.16.5_--_1.21%2B-yellow.svg?style=for-the-badge)
+![Version](https://img.shields.io/badge/v3.0.0-HT1-orange.svg?style=for-the-badge)
 
-**A modular, event-driven framework for studying AI decision-making, movement prediction, and behavioral modeling in sandboxed environments.**
+**A modular, event-driven AI framework for studying adaptive combat behavior, predictive movement, and humanized input patterns in sandboxed Minecraft environments.**
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Architecture](#-architecture) • [License](#-license)
+[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Architecture](#-architecture) • [Configuration](#-configuration) • [License](#-license)
 
 </div>
 
@@ -24,31 +24,51 @@
 
 ## 📖 Overview
 
-**TIER-ONE** is an open-source research framework designed to explore the capabilities of Node.js in simulating complex agent behaviors within Minecraft. It utilizes a layered architecture (**Perception → AI → Execution**) to study vector mathematics, utility-based decision making, and human-like input patterns.
+**TIER-ONE v3.0** is an advanced research framework that goes beyond static scripts. It introduces **Adaptive Combat Learning**, where the bot analyzes its own performance over 50+ fights and automatically adjusts its decision-making weights using gradient descent. Combined with **EMA-based prediction** and **5-profile Humanized Aim**, it simulates high-tier player behavior for academic study and private server stress-testing.
 
-*Note: This project is intended solely for educational purposes, private server stress-testing, and academic research into AI state machines. It is not designed for use on public multiplayer servers.*
+*Note: This project is intended solely for educational purposes, private server testing, and AI state machine research. It is not designed for use on public multiplayer servers.*
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features (v3.0 HT1)
 
-### 🧠 AI & Behavioral Modeling
-*   **Predictive Movement:** Studies velocity vectors to calculate future target positions (3-5 ticks ahead) for simulation accuracy.
-*   **Humanization Layer:** Implements randomized input delays (W-Tap 30-60ms), micro-movements, and variance to simulate natural user behavior for research validity.
-*   **Utility-Based Decision Engine:** Evaluates actions based on dynamic scoring (Attack, Retreat, Heal) rather than hardcoded scripts.
-*   **Dynamic Strafing:** Vector-based circle strafing and perpendicular evasion algorithms.
+### 🧠 Adaptive Combat Learning
+*   **CombatHistoryStore:** Stores metadata from the last 50 fights (win rate, accuracy, combo length).
+*   **AdaptiveLearner:** Every 200 ticks, analyzes performance and applies a gradient step to adjust `UtilityScorer` weights.
+*   **Self-Optimization:** Automatically shifts aggression vs. survival priorities based on historical success rates.
 
-### ⚔️ Simulation Modes
-| Mode | Icon | Description | Research Focus |
-| :--- | :---: | :--- | :--- |
-| **Axe Mode** |  | Simulates shield-disabling mechanics and critical hit timing. | Cooldown Management |
-| **Sword Mode** | 🗡️ | Studies aggressive engagement optimization and combo sequences. | Action Frequency |
-| **Crystal Mode** | 💎 | Explores area-denial tactics and explosive placement logic. | Spatial Awareness |
+### 🎯 Humanized Aim V2
+Five distinct aiming profiles that mimic different player psychotypes:
+| Profile | Speed | Micro-errors | Overshoot | Best For |
+| :--- | :--- | :--- | :--- | :--- |
+| **Aggressive** | High | Medium | 15% | Aggressive Strategy |
+| **Balanced** | Medium | Low | 7% | Default / Balanced |
+| **Defensive** | Low | Minimal | 3% | Survival / Kiting |
+| **Nervous** | Max | High | 20% | Sword Combos |
+| **Smooth** | Medium | Minimal | 2% | Axe / Crit Timing |
 
-### 🤖 Smart Automation
-*   **Auto-Equip:** Instantly swaps to Netherite/Diamond gear based on durability and enchantments.
-*   **Auto-Eat:** Monitors health/hunger bars and consumes Golden Apples or food automatically.
-*   **Creative Integration:** `!creative` command (requires OP) instantly fills inventory with test gear.
+###  Advanced Prediction (EMA + Physics)
+*   Uses **Exponential Moving Average** to smooth enemy velocity vectors.
+*   Predicts position 3–5 ticks ahead based on physics constraints.
+*   Detects direction change probability; switches to predicted point when P(change) > 0.55.
+
+### ⚔️ 6 Specialized Strategies
+| Strategy | Behavior | Auto-Switch Trigger |
+| :--- | :--- | :--- |
+| **Aggressive** | Max DPS, constant pressure | HP < 14 → Balanced |
+| **Balanced** | Standard HT1 playstyle | Default |
+| **Defensive** | Priority survival, 4-5 block range | HP < 8 |
+| **Sword** | Fast combos, frequent W/S-tap | Manual / Adaptive |
+| **Axe** | Guaranteed crits, jump resets | Manual / Adaptive |
+| **Crystal** | Positioning + burst phases | Manual / Adaptive |
+
+### 📊 Comprehensive Telemetry (6 Metrics)
+*   **Accuracy:** Hit percentage over sliding window.
+*   **CPS:** Clicks per second (5s average).
+*   **Combo Length:** Current / Max / Average.
+*   **Damage Efficiency:** Damage dealt per attack.
+*   **Survival Score:** Integral metric (0–100) based on HP retention.
+*   **Win Rate:** Historical win percentage.
 
 ---
 
@@ -77,116 +97,94 @@
     server: {
         host: 'localhost',
         port: 25565,
-        version: 'auto' // Auto-detects 1.16.5 - 1.21+
+        version: 'auto' 
     }
     ```
 
 4.  **Run the framework:**
     ```bash
-    npm start
+    npm start          # Normal run
+    npm run dev        # With auto-reload (nodemon)
+    npm run debug      # With verbose logging
     ```
 
 ---
 
-##  Usage & Control
+## 🎮 Usage & Control
 
-The framework supports dual-control interfaces for flexible testing.
+The framework supports dual-control interfaces.
 
 ### 💬 In-Game Commands (Chat)
-*Type these in the Minecraft chat.*
+*Prefix: `!`*
 
 | Command | Description |
 | :--- | :--- |
-| `!fight <player>` | Initiate combat simulation with a target. |
-| `!stop` | Terminate current simulation session. |
-| `!mode <axe\|sword\|crystal>` | Switch behavioral model. |
-| `!creative` | (Requires OP) Switch to Creative and get test gear. |
-| `!survival` | (Requires OP) Switch back to Survival. |
-| `!equip` | Auto-equip best armor from inventory. |
-| `!status` | Display Health, Hunger, Ping, and Mode. |
+| `!fight <player>` | Initiate combat simulation. |
+| `!stop` | Terminate current session. |
+| `!strategy <name>` | Switch strategy (`aggressive`, `balanced`, `defensive`, `sword`, `axe`, `crystal`). |
+| `!aim <profile>` | Switch aim profile (`aggressive`, `balanced`, `defensive`, `nervous`, `smooth`). |
+| `!status` | Display all 6 HT1 metrics. |
+| `!learn` | Show adaptive learning results & weight updates. |
+| `!creative` | (Requires OP) Equip test gear. |
+| `!help` | List all commands. |
 
 ### 💻 Terminal Commands (CLI)
-*Type these directly into the Node.js terminal window.*
+*No prefix required.*
 
 | Command | Description |
 | :--- | :--- |
-| `fight <player>` | Same as chat command. |
-| `mode <type>` | Change combat mode. |
-| `chat <message>` | Send a message to the game chat from console. |
-| `status` | Print detailed bot stats to console. |
-| `exit` | Gracefully disconnect and shut down. |
+| `fight <player>` | Start simulation via console. |
+| `stop` | End combat session. |
+| `strategy <name>` | Change active strategy. |
+| `aim <profile>` | Change aiming profile. |
+| `status` | Print detailed HT1 stats to console. |
+| `learn` | Show adaptation statistics. |
+| `chat <message>` | Send message to game chat. |
+| `exit` | Gracefully shut down. |
 
 ---
 
-## 🏗️ Project Structure
+## 🏗️ Architecture (v3.0)
 
 ```text
-tier-one-bot/
-├── index.js              # Main entry point & Event loop
-├── config.js             # Combat & Server configuration
-├── package.json          # Dependencies
-│
-├── combat/               # Combat Logic Modules
-│   ├── base_combat.js    # Abstract class for combat modes
-│   ├── axe_mode.js       # 🪓 Axe/Shield logic
-│   ├── sword_mode.js     # 🗡️ Sword/Combo logic
-│   └── crystal_mode.js   # 💎 Crystal/Anchor logic
-│
-── utils/                # Utilities & Helpers
-    ├── equipment.js      # Inventory management
-    ├── movement.js       # Pathfinding & Strafing
-    ├── anticheat.js      # Input randomization & humanization
-    └── prediction.js     # Velocity & Position tracking
-```
----
-
-## ⚙️ Configuration
-
-Edit `config.js` to fine-tune the framework's behavior:
-
-| Parameter | Description | Default |
-| :--- | :--- | :--- |
-| `combat.reach` | Max engagement distance (blocks) | `3.8` |
-| `combat.wTapDelay` | Randomization range for sprint-resetting (ms) | `30-60` |
-| `combat.critChance` | Probability of jumping for a critical hit | `0.95` |
-| `op.autoRequest` | Automatically asks for OP on spawn | `true` |
-
-**Example snippet:**
-```javascript
-combat: {
-    reach: 3.8,
-    wTapDelayMin: 30,
-    wTapDelayMax: 60,
-    critChance: 0.95,
-    predictionTicks: 3
-},
-op: {
-    autoRequest: true
-}
-```
----
-
-## ⚖️ License & Disclaimer
-
-This project is licensed under the **TIER-ONE Educational & Research License (TERL) 2.0**.  
-See the [LICENSE](LICENSE) file for full legal text.
-
-> ### ⚠️ IMPORTANT NOTICE
-> 
-> *   🎓 **Educational Use Only:** This software is provided for academic research and private testing.
-> *   🛡️ **No Warranty:** The authors assume **NO responsibility** for account bans, IP blocks, or hardware restrictions imposed by server administrators or platform holders (Mojang/Microsoft).
-> *   ⚖️ **Compliance:** Using automated clients on public servers violates the Minecraft EULA. Users are solely responsible for complying with the rules of the environments in which they run this software.
-
----
-
-<div align="center">
-
-**Made with ❤️ for the AI Research Community.**
-
-*If you use this code for research, please cite the original repository.*
-
-<br>
-
-⭐ [Star the repo](https://github.com/verty4704-png/-TIER-ONE-BOT) •  [Report an issue](https://github.com/verty4704-png/-TIER-ONE-BOT/issues) • 📖 [Read the Wiki](https://github.com/verty4704-png/-TIER-ONE-BOT/wiki)
-
-</div>
+tier-one-ht1/
+├── index.js                         # Entry point & orchestrator
+├── config.js                        # HT1 configuration
+├── src/
+│   ├── core/
+│   │   ├── EventBus.js              # Pub/Sub communication
+│   │   ├── Logger.js                # Colored structured logging
+│   │   ── ConfigManager.js         # Validated config loading
+│   │
+│   ├── perception/
+│   │   ├── WorldState.js            # Unified world snapshot (20 TPS)
+│   │   ├── EntityTracker.js         # Velocity & position tracking
+│   │   ├── CombatAnalyzer.js        # Real-time combat assessment
+│   │   └── EnemyPredictor.js        # ★ EMA-based position forecasting
+│   │
+│   ├── ai/
+│   │   ├── DecisionEngine.js        # Utility-based action selection
+│   │   ├── UtilityScorer.js         # Dynamic weight evaluation
+│   │   ├── AdaptiveLearner.js       # ★ Gradient-based self-optimization
+│   │   └── CombatHistoryStore.js    # Last 50 fights memory
+│   │
+│   ├── execution/
+│   │   ├── CombatExecutor.js        # W-Tap, S-Tap, Jump Reset, Reach
+│   │   ├── MovementEngine.js        # Dynamic strafing & evasion
+│   │   ├── ItemManager.js           # Hotbar & creative equip
+│   │   └── HumanizedAim.js          # ★ 5-profile aim simulation
+│   │
+│   ├── strategy/
+│   │   ├── StrategyManager.js       # 6-strategy router + aim sync
+│   │   └── strategies/
+│   │       ├── BaseStrategy.js      # Abstract base class
+│   │       ├── AggressiveStrategy.js
+│   │       ├── BalancedStrategy.js
+│   │       ├── DefensiveStrategy.js
+│   │       ├── SwordStrategy.js
+│   │       ├── AxeStrategy.js
+│   │       └── CrystalStrategy.js
+│   │
+│   └── metrics/
+│       ├── Telemetry.js             # 6-metric real-time tracking
+│       ── ReplayRecorder.js        # JSONL fight recording
