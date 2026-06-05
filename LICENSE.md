@@ -5,8 +5,8 @@ Copyright (c) 2026 TIER-ONE BOT Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy 
 of this software and associated documentation files (the "Software"), to use, 
-copy, modify, and distribute the Software for **educational, research, and 
-private testing purposes only**, subject to the following conditions:
+copy, modify, and distribute the Software for educational, research, and 
+private testing purposes only, subject to the following conditions:
 
 1. PERMITTED USES
    a) Academic Research: Use of the Software for studying network protocols, 
