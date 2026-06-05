@@ -1,6 +1,6 @@
 <div align="center">
 
-#  TIER-ONE AI Framework
+# 🏆 TIER-ONE AI Framework
 
 ### Advanced Research Platform for Minecraft Combat Simulation
 
@@ -14,6 +14,11 @@
 [Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Architecture](#-architecture) • [License](#-license)
 
 </div>
+
+---
+
+> ⚠️ **EDUCATIONAL USE ONLY**  
+> This project is for private testing and AI research. Using automated clients on public servers violates the Minecraft EULA. The authors are **NOT responsible** for account bans.
 
 ---
 
@@ -31,19 +36,19 @@
 *   **Predictive Movement:** Studies velocity vectors to calculate future target positions (3-5 ticks ahead) for simulation accuracy.
 *   **Humanization Layer:** Implements randomized input delays (W-Tap 30-60ms), micro-movements, and variance to simulate natural user behavior for research validity.
 *   **Utility-Based Decision Engine:** Evaluates actions based on dynamic scoring (Attack, Retreat, Heal) rather than hardcoded scripts.
+*   **Dynamic Strafing:** Vector-based circle strafing and perpendicular evasion algorithms.
 
 ### ⚔️ Simulation Modes
 | Mode | Icon | Description | Research Focus |
 | :--- | :---: | :--- | :--- |
-| **Axe Mode** | 🪓 | Simulates shield-disabling mechanics and critical hit timing. | Cooldown Management |
-| **Sword Mode** | 🗡️ | Studies aggressive reach optimization and combo sequences. | Action Frequency |
+| **Axe Mode** |  | Simulates shield-disabling mechanics and critical hit timing. | Cooldown Management |
+| **Sword Mode** | 🗡️ | Studies aggressive engagement optimization and combo sequences. | Action Frequency |
 | **Crystal Mode** | 💎 | Explores area-denial tactics and explosive placement logic. | Spatial Awareness |
 
-### 🛠️ Framework Capabilities
-*   **Event-Driven Core:** Uses a centralized `EventBus` for loose coupling between modules.
-*   **Telemetry System:** Tracks Hit Ratio, CPS, and Reaction Time for post-simulation analysis.
-*   **Replay Recorder:** Saves match data to JSONL for offline analysis and ML training datasets.
-*   **Headless Support:** Full control via Terminal CLI, ideal for remote VPS testing.
+### 🤖 Smart Automation
+*   **Auto-Equip:** Instantly swaps to Netherite/Diamond gear based on durability and enchantments.
+*   **Auto-Eat:** Monitors health/hunger bars and consumes Golden Apples or food automatically.
+*   **Creative Integration:** `!creative` command (requires OP) instantly fills inventory with test gear.
 
 ---
 
@@ -72,7 +77,7 @@
     server: {
         host: 'localhost',
         port: 25565,
-        version: 'auto' 
+        version: 'auto' // Auto-detects 1.16.5 - 1.21+
     }
     ```
 
@@ -83,43 +88,105 @@
 
 ---
 
-## 🎮 Usage & Control
+##  Usage & Control
 
 The framework supports dual-control interfaces for flexible testing.
 
 ### 💬 In-Game Commands (Chat)
-*Prefix: `!`*
+*Type these in the Minecraft chat.*
 
 | Command | Description |
 | :--- | :--- |
 | `!fight <player>` | Initiate combat simulation with a target. |
 | `!stop` | Terminate current simulation session. |
-| `!mode <axe|sword|crystal>` | Switch behavioral model. |
-| `!creative` | (Requires OP) Equip test gear in Creative mode. |
-| `!status` | Display real-time telemetry data. |
+| `!mode <axe\|sword\|crystal>` | Switch behavioral model. |
+| `!creative` | (Requires OP) Switch to Creative and get test gear. |
+| `!survival` | (Requires OP) Switch back to Survival. |
+| `!equip` | Auto-equip best armor from inventory. |
+| `!status` | Display Health, Hunger, Ping, and Mode. |
 
 ### 💻 Terminal Commands (CLI)
-*No prefix required.*
+*Type these directly into the Node.js terminal window.*
 
 | Command | Description |
 | :--- | :--- |
-| `fight <player>` | Start simulation via console. |
-| `mode <type>` | Change active strategy. |
-| `chat <message>` | Send message to game chat from CLI. |
-| `status` | Print detailed metrics to console. |
-| `exit` | Gracefully shut down the instance. |
+| `fight <player>` | Same as chat command. |
+| `mode <type>` | Change combat mode. |
+| `chat <message>` | Send a message to the game chat from console. |
+| `status` | Print detailed bot stats to console. |
+| `exit` | Gracefully disconnect and shut down. |
 
 ---
 
-## 🏗️ Architecture (v2.0)
-
-TIER-ONE uses a professional layered structure to ensure scalability and maintainability:
+## 🏗️ Project Structure
 
 ```text
-src/
-├── core/               # EventBus, Logger, ConfigManager
-├── perception/         # WorldState, EntityTracker (Sensors)
-├── ai/                 # DecisionEngine, UtilityScorer (Brain)
-├── execution/          # CombatExecutor, MovementEngine (Actuators)
-── strategy/           # Axe/Sword/Crystal Strategies
-└── metrics/            # Telemetry, ReplayRecorder
+tier-one-bot/
+├── index.js              # Main entry point & Event loop
+├── config.js             # Combat & Server configuration
+├── package.json          # Dependencies
+│
+├── combat/               # Combat Logic Modules
+│   ├── base_combat.js    # Abstract class for combat modes
+│   ├── axe_mode.js       # 🪓 Axe/Shield logic
+│   ├── sword_mode.js     # 🗡️ Sword/Combo logic
+│   └── crystal_mode.js   # 💎 Crystal/Anchor logic
+│
+── utils/                # Utilities & Helpers
+    ├── equipment.js      # Inventory management
+    ├── movement.js       # Pathfinding & Strafing
+    ├── anticheat.js      # Input randomization & humanization
+    └── prediction.js     # Velocity & Position tracking
+```
+---
+
+## ⚙️ Configuration
+
+Edit `config.js` to fine-tune the framework's behavior:
+
+| Parameter | Description | Default |
+| :--- | :--- | :--- |
+| `combat.reach` | Max engagement distance (blocks) | `3.8` |
+| `combat.wTapDelay` | Randomization range for sprint-resetting (ms) | `30-60` |
+| `combat.critChance` | Probability of jumping for a critical hit | `0.95` |
+| `op.autoRequest` | Automatically asks for OP on spawn | `true` |
+
+**Example snippet:**
+```javascript
+combat: {
+    reach: 3.8,
+    wTapDelayMin: 30,
+    wTapDelayMax: 60,
+    critChance: 0.95,
+    predictionTicks: 3
+},
+op: {
+    autoRequest: true
+}
+```
+---
+
+## ⚖️ License & Disclaimer
+
+This project is licensed under the **TIER-ONE Educational & Research License (TERL) 2.0**.  
+See the [LICENSE](LICENSE) file for full legal text.
+
+> ### ⚠️ IMPORTANT NOTICE
+> 
+> *   🎓 **Educational Use Only:** This software is provided for academic research and private testing.
+> *   🛡️ **No Warranty:** The authors assume **NO responsibility** for account bans, IP blocks, or hardware restrictions imposed by server administrators or platform holders (Mojang/Microsoft).
+> *   ⚖️ **Compliance:** Using automated clients on public servers violates the Minecraft EULA. Users are solely responsible for complying with the rules of the environments in which they run this software.
+
+---
+
+<div align="center">
+
+**Made with ❤️ for the AI Research Community.**
+
+*If you use this code for research, please cite the original repository.*
+
+<br>
+
+⭐ [Star the repo](https://github.com/verty4704-png/-TIER-ONE-BOT) •  [Report an issue](https://github.com/verty4704-png/-TIER-ONE-BOT/issues) • 📖 [Read the Wiki](https://github.com/verty4704-png/-TIER-ONE-BOT/wiki)
+
+</div>
