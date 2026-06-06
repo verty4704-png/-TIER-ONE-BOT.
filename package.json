@@ -1,7 +1,7 @@
 {
   "name": "tier-one-ht1",
-  "version": "3.0.0",
-  "description": "MCTier HT1 PvP AI Framework — Adaptive Learning, Advanced Prediction, Humanized Aim V2",
+  "version": "4.0.0",
+  "description": "MCTier HT1 PvP AI Framework v4.0 — Knockback Prediction, Enemy Pattern Analysis, Crit Optimization, Opponent Memory",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
@@ -11,7 +11,8 @@
   },
   "keywords": [
     "minecraft", "bot", "pvp", "mineflayer",
-    "ht1", "mctier", "ai", "framework", "adaptive"
+    "ht1", "mctier", "ai", "framework", "adaptive",
+    "knockback-prediction", "pattern-analysis"
   ],
   "author": "TIER-ONE Team",
   "license": "TERL-2",
