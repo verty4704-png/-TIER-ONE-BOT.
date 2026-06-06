@@ -1,6 +1,4 @@
-/**
- * CHANGELOG.md — v4.0.0 Release Notes
- */
+
 
 # 🚀 TIER-ONE v4.0.0 — HT1 Ultimate Upgrade
 
